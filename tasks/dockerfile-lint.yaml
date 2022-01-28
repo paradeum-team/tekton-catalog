@@ -1,0 +1,56 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: dockerfile-lint
+  labels:
+    version: 0.0.0
+spec:
+  workspaces:
+    - name: source
+      description: Directory where application source is located.
+
+  params:
+    - name: DOCKERFILE
+      default: Dockerfile
+    - name: CONTEXT
+      default: .
+    - name: LINT_IMAGE
+      default: ghcr.io/hadolint/hadolint:v2.8.0-alpine
+    - name: lint-dockerfile
+      default: "true"
+
+  steps:
+    - name: lint
+      image: $(params.LINT_IMAGE)
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: HADOLINT_CFG
+          valueFrom:
+            configMapKeyRef:
+              name: hadolint-config
+              key: HADOLINT_CFG
+              optional: true
+      script: |
+        PERFORM_LINT="$(params.lint-dockerfile)"
+        if [[ "${PERFORM_LINT}" == "false" ]] || [[ -z "${PERFORM_LINT}" ]]; then
+          echo "User selected to skip Dockerfile linting. Skipping this task."
+          exit 0
+        fi
+        FILE="$(workspaces.source.path)"/.hadolint.yaml
+        if [ -f "${HADOLINT_CFG}" ]; then
+          FILE="$(workspaces.source.path)/${HADOLINT_CFG}"
+          echo "In this step, hadolint will lint your Dockerfile, using ${FILE}, with the following rules: "
+          cat ${FILE}
+          echo "For more information about hadolint please refer to https://cloudnativetoolkit.dev/"
+          hadolint --config ${HADOLINT_CFG} $(params.DOCKERFILE)
+        elif [ -f "${FILE}" ]; then
+          echo "In this step, hadolint will lint your Dockerfile, using .hadolint.yaml in your repository, with the following rules: "
+          cat "${FILE}"
+          echo "For more information about hadolint please refer to https://cloudnativetoolkit.dev/"
+          hadolint $(params.DOCKERFILE)
+        else
+          echo "In this step, hadolint will lint your Dockerfile"
+          echo "If you would like to configure hadolint, please see https://github.com/hadolint/hadolint"
+          echo "For more information about hadolint please refer to https://cloudnativetoolkit.dev/"
+          hadolint $(params.DOCKERFILE)
+        fi

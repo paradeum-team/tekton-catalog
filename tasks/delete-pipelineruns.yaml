@@ -1,0 +1,27 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: delete-pipelineruns
+  labels:
+    version: 0.0.0
+spec:
+  params:
+    - name: historyLimit
+      default: "3"
+    - name: selector
+    - name: image
+      default: "bitnami/kubectl:1.22"
+    - name: namespace
+      default: tekton-pipelines
+
+  steps:
+    - name: delete
+      image: $(params.image)
+      script: |
+        deleteList=$(kubectl get pr --sort-by='.status.completionTime' -l '$(params.selector)' -o jsonpath='{range .items[?(@.status.completionTime)]}{.metadata.name}{"\n"}{end}' | head -n -$(params.historyLimit))
+        if [ -n "$deleteList" ];then
+           kubectl -n $(params.namespace) delete pr $deleteList 
+        else
+           echo "The delete list is empty."
+        fi
+

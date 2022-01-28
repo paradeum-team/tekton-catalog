@@ -1,0 +1,94 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: golang-pipeline-template
+spec:
+  params:
+  - name: gitrevision
+    description: The git revision
+    default: master
+  - name: gitrepositoryurl
+    description: The git repository url
+  - name: registryrepo
+    default: registry.paradeum.com
+  - name: project
+  - name: appname
+  - name: buildimage
+    default: golang:1.17-alpine
+  - name: deletePipelinerunsPelector
+    default: "tekton.dev/pipeline=golang"
+  - name: chartgitrepositoryurl
+  - name: chartgitbranch
+    default: dev
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      labels:
+        tekton.dev/pipeline: golang
+        tekton.dev/project: $(tt.params.project)
+        tekton.dev/appname: $(tt.params.appname)
+      generateName: golang-$(tt.params.project)-$(tt.params.appname)- # 前缀名称 
+      namespace: tekton-pipelines
+    spec:
+      workspaces:
+        - name: source-ws
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+              - ReadWriteOnce
+              storageClassName: local-path
+              resources:
+                requests:
+                  storage: 1Gi
+        - name: cache-ws
+          persistentVolumeClaim:
+            claimName: tekton-cache-claim
+          subPath: cache-tekton-golang
+        - name: chart-source-ws
+          volumeClaimTemplate:
+            spec:
+              accessModes:
+              - ReadWriteOnce
+              storageClassName: local-path
+              resources:
+                requests:
+                  storage: 1Gi
+        - name: dockerconfig-ws
+          secret:
+            secretName: pld-cicd-secret
+        - name: basic-auth-ws
+          secret:
+            secretName: gitlab-basic-auth-secret
+        - name: chart-basic-auth-ws
+          secret:
+            secretName: gitlab-basic-auth-secret
+      params:
+      - name: APP_NAME
+        value: $(tt.params.appname)
+      - name: BUILD_IMAGE
+        value: $(tt.params.buildimage)
+      - name: SOURCE_URL
+        value: $(tt.params.gitrepositoryurl)
+      - name: SOURCE_REFERENCE
+        value: $(tt.params.gitrevision)
+      - name: DOCKERFILE_CONTEXT
+        value: .
+      - name: RUN_IMAGE
+        value: "" 
+      - name: BUILDER_IMAGE
+        value: gcr.io/kaniko-project/executor:v1.7.0
+      - name: IMAGE_URL
+        value: $(tt.params.registryrepo)/$(tt.params.project)/$(tt.params.appname)
+      - name: IMAGE_TAG
+        value: $(tt.params.gitrevision)
+      - name: DELETE_PIPELINERUNS_SELECTOR
+        value: 'tekton.dev/pipeline=golang,tekton.dev/project=$(tt.params.project),tekton.dev/appname=$(tt.params.appname)' 
+      - name: CHART_SOURCE_URL
+        value: $(tt.params.chartgitrepositoryurl)
+      - name: CHART_SOURCE_BRANCH
+        value: $(tt.params.chartgitbranch)
+      pipelineRef:
+        name: golang
+      serviceAccountName: tekton-triggers-sa
+      timeout: 10m0s

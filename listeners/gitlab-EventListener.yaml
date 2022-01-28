@@ -1,0 +1,41 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: gitlab-listener
+spec:
+  serviceAccountName: tekton-triggers-sa
+  triggers:
+  - name: gitlab-nodejs-tag-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 gitlab-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/nft-ui']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+    bindings:
+    - ref: gitlab-nft-pipeline-binding # TriggerBinding 对象
+    template:
+      ref: nodejs-pipeline-template  # TriggerTemplate 对象
+  - name: gitlab-golang-tag-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 gitlab-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/nft-api']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+    bindings:
+    - ref: gitlab-nft-pipeline-binding # TriggerBinding 对象
+    template:
+      ref: golang-pipeline-template  # TriggerTemplate 对象

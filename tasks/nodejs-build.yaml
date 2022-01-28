@@ -1,0 +1,45 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: nodejs-build
+  labels:
+    version: 0.0.0
+spec:
+  workspaces:
+    - name: source
+      description: Directory where application source is located.
+    - name: cache
+      optional: true
+
+  params:
+    - name: build-image
+      default: node:14
+
+  steps:
+    - name: build
+      image: $(params.build-image)
+      workingDir: $(workspaces.source.path)
+      env:
+      - name: npm_config_registry
+        valueFrom:
+          secretKeyRef:
+            name: npm-config
+            key: npm_config_registry
+            optional: true
+      script: |
+        set -e
+        if [ "$(workspaces.cache.bound)" = "true" ]; then
+          mkdir -p node_modules
+          cp -Rf $(workspaces.cache.path)/. node_modules/
+        fi
+
+        VERSION=`cat version`
+        echo ----- VERSION: $VERSION -----
+        echo "VERSION='$VERSION'" >> public/conf.js
+
+        npm install
+        npm run build:prod --if-present
+
+        if [ "$(workspaces.cache.bound)" = "true" ] ; then
+          cp -Rf node_modules/. $(workspaces.cache.path)/
+        fi
