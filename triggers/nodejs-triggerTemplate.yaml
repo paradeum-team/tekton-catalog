@@ -15,7 +15,7 @@ spec:
   - name: project
   - name: appname
   - name: buildimage
-    default: node:14-alpine
+    default: node:14
   - name: deletePipelinerunsPelector
     default: "tekton.dev/pipeline=nodejs"
   - name: chartgitrepositoryurl
