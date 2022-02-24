@@ -21,6 +21,8 @@ spec:
     - name: APP_NAME
     - name: BUILD_IMAGE
       description: The image on which builds will run.
+    - name: NPM_BUILD_CMD
+      default: "npm run build"
     - name: SOURCE_URL
       description: A git repo url where the source code resides.
     - name: SOURCE_REFERENCE
@@ -70,6 +72,8 @@ spec:
       params:
         - name: build-image
           value: $(params.BUILD_IMAGE)
+        - name: npm-build-cmd 
+          value: $(params.NPM_BUILD_CMD)
       runAfter: 
         - fetch-from-git
       workspaces:

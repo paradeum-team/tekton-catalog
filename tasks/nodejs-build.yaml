@@ -15,6 +15,8 @@ spec:
   params:
     - name: build-image
       default: node:14
+    - name: npm-build-cmd
+      default: "npm run build"
 
   steps:
     - name: build
@@ -39,7 +41,7 @@ spec:
         echo "VERSION='$VERSION'" >> public/conf.js
 
         npm install
-        npm run build:prod --if-present
+        $(params.npm-build-cmd)
 
         if [ "$(workspaces.cache.bound)" = "true" ] ; then
           cp -Rf node_modules/. $(workspaces.cache.path)/

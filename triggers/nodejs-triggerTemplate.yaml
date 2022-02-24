@@ -16,6 +16,8 @@ spec:
   - name: appname
   - name: buildimage
     default: node:14
+  - name: npmbuildcmd
+    default: "npm run build"
   - name: deletePipelinerunsPelector
     default: "tekton.dev/pipeline=nodejs"
   - name: chartgitrepositoryurl
@@ -69,6 +71,8 @@ spec:
         value: $(tt.params.appname)
       - name: BUILD_IMAGE
         value: $(tt.params.buildimage)
+      - name: NPM_BUILD_CMD
+        value: $(tt.params.npmbuildcmd)
       - name: SOURCE_URL
         value: $(tt.params.gitrepositoryurl)
       - name: SOURCE_REFERENCE
