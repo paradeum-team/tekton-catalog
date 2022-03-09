@@ -11,7 +11,7 @@ spec:
   - name: gitrepositoryurl
     description: The git repository url
   - name: registryrepo
-    default: registry.paradeum.com
+    default: registry.example.com
   - name: project
   - name: appname
   - name: buildimage
