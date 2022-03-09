@@ -15,6 +15,8 @@ spec:
   params:
     - name: build-image
       default: node:14
+    - name: npm-build-cmd
+      default: "npm run build"
 
   steps:
     - name: build
@@ -28,6 +30,7 @@ spec:
             key: npm_config_registry
             optional: true
       script: |
+        #!/bin/bash
         set -e
         if [ "$(workspaces.cache.bound)" = "true" ]; then
           mkdir -p node_modules
@@ -36,10 +39,12 @@ spec:
 
         VERSION=`cat version`
         echo ----- VERSION: $VERSION -----
-        echo "VERSION='$VERSION'" >> public/conf.js
+        if [ -f "public/conf.js" ];then
+          echo "VERSION='$VERSION'" >> public/conf.js
+        fi
 
         npm install
-        npm run build:prod --if-present
+        $(params.npm-build-cmd)
 
         if [ "$(workspaces.cache.bound)" = "true" ] ; then
           cp -Rf node_modules/. $(workspaces.cache.path)/

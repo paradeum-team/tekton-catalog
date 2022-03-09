@@ -1,0 +1,25 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: github-listener
+spec:
+  serviceAccountName: tekton-triggers-sa
+  triggers:
+  - name: github-nodejs-tag-events-trigger
+    interceptors:
+    - github:
+        secretRef:  # 引用 github-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: github-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Github Tag 事件
+      cel:
+        filter: body.ref.split('/')[1] == 'tags' && body.repository.full_name in ['paradeum-team/ethereum-api','paradeum-team/blockchain-api']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+    bindings:
+    - ref: github-nft-pipeline-binding # TriggerBinding 对象
+    template:
+      ref: nodejs-pipeline-template  # TriggerTemplate 对象
