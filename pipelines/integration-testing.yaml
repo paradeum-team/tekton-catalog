@@ -1,0 +1,174 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: integration-testing
+spec:
+
+  workspaces:
+    - name: source-ws
+      description: Location where source is stored.
+    - name: cache-ws
+      optional: true
+    - name: basic-auth-ws
+      optional: true
+    - name: chart-source-ws
+    - name: chart-basic-auth-ws
+    - name: dockerconfig-ws
+      optional: true
+
+  params:
+    - name: APP_NAME
+    - name: BUILD_IMAGE
+      description: The image on which builds will run.
+      default: "golang:1.17-alpine"
+    - name: SOURCE_URL
+      description: A git repo url where the source code resides.
+    - name: SOURCE_REFERENCE
+      description: The branch, tag or SHA to checkout.
+      default: ""
+    - name: CHART_SOURCE_URL
+      description: A git repo url where the helm chart source code resides.
+    - name: CHART_SOURCE_BRANCH
+      description: The helm chart branch.
+      default: "dev"
+    - name: CHART_CONTEXT
+    - name: DOCKERFILE_CONTEXT
+      default: "."
+    - name: RUN_IMAGE
+      description: The name of the run image to use (defaults to image specified in builder).
+      default: ""
+    - name: BUILDER_IMAGE
+    - name: IMAGE_URL
+      default: ""
+    - name: IMAGE_TAG
+      default: "latest"
+    - name: PIPELINERUNS_HISTORY_LIMIT
+      default: "10"
+    - name: DELETE_PIPELINERUNS_IMAGE
+      default: "bitnami/kubectl:1.22"
+    - name: DELETE_PIPELINERUNS_SELECTOR
+      default: "tekton.dev/pipeline=integration-testing"
+    - name: DELETE_PIPELINERUNS_NAMESPACE
+      default: "tekton-pipelines"
+    - name: GO_BUILD_PACKAGES
+      default: "./"
+    - name: GO_BUILD_FLAGS
+      default: "-a -v -installsuffix cgo"
+    - name: GO_CGO_ENABLED
+      default: "0"
+
+  tasks:
+    - name: fetch-from-git
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.SOURCE_URL)
+        - name: revision
+          value: $(params.SOURCE_REFERENCE)
+      workspaces:
+        - name: output
+          workspace: source-ws
+        - name: basic-auth
+          workspace: basic-auth-ws
+
+    - name: compile
+      taskRef:
+         name: golang-build
+      params:
+        - name: build-image
+          value: $(params.BUILD_IMAGE)
+        - name: packages
+          value: $(params.GO_BUILD_PACKAGES)
+        - name: flags
+          value: "$(params.GO_BUILD_FLAGS) -o $(params.APP_NAME)"
+        - name: CGO_ENABLED
+          value: $(params.GO_CGO_ENABLED)
+      runAfter: 
+        - fetch-from-git
+      workspaces:
+        - name: source
+          workspace: source-ws
+        - name: cache
+          workspace: cache-ws
+    - name: kaniko
+      taskRef:
+        name: kaniko
+      runAfter: 
+        - compile
+      params:
+        - name: CONTEXT
+          value: '$(params.DOCKERFILE_CONTEXT)'
+        - name: IMAGE
+          value: '$(params.IMAGE_URL):$(params.IMAGE_TAG)'
+        - name: BUILDER_IMAGE
+          value: '$(params.BUILDER_IMAGE)'
+      workspaces:
+        - name: source
+          workspace: source-ws
+        - name: dockerconfig
+          workspace: dockerconfig-ws
+      
+    - name: fetch-helm-chart
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.CHART_SOURCE_URL)
+        - name: revision
+          value: $(params.CHART_SOURCE_BRANCH)
+      workspaces:
+        - name: output
+          workspace: chart-source-ws
+        - name: basic-auth
+          workspace: chart-basic-auth-ws
+    - name: update-chart-version
+      taskRef:
+        name: yq
+      runAfter: 
+        - fetch-helm-chart
+      params:
+        - name: files
+          value:
+            - "$(params.CHART_CONTEXT)/values.yaml"
+        - name: expression
+          value: '.test.image.tag="$(params.IMAGE_TAG)"'
+      workspaces:
+        - name: source
+          workspace: chart-source-ws
+    - name: push-chart
+      taskRef:
+        name: git-cli
+      runAfter: 
+        - fetch-helm-chart
+        - kaniko
+      params:
+        - name: GIT_SCRIPT
+          value: |
+            git config --global user.email "cicd@example.com"
+            git config --global user.name "cicd"
+            git add .
+            git commit -m "sync: update $(params.APP_NAME) image tag to $(params.IMAGE_TAG)"
+            git checkout -b $(params.CHART_SOURCE_BRANCH)
+            git pull origin $(params.CHART_SOURCE_BRANCH)
+            git push origin $(params.CHART_SOURCE_BRANCH)
+      workspaces:
+        - name: source
+          workspace: chart-source-ws
+        - name: basic-auth
+          workspace: chart-basic-auth-ws
+
+    - name: delete-pr
+      taskRef:
+         name: delete-pipelineruns
+      params:
+        - name: historyLimit
+          value: '$(params.PIPELINERUNS_HISTORY_LIMIT)'
+        - name: selector
+          value: '$(params.DELETE_PIPELINERUNS_SELECTOR)'
+        - name: image
+          value: '$(params.DELETE_PIPELINERUNS_IMAGE)'
+        - name: namespace
+          value: '$(params.DELETE_PIPELINERUNS_NAMESPACE)'
+
