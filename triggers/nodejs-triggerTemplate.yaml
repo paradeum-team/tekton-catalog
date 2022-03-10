@@ -15,7 +15,7 @@ spec:
   - name: project
   - name: appname
   - name: buildimage
-    default: node:14
+    default: registry.example.com/library/node:14
   - name: npmbuildcmd
     default: "npm run build"
   - name: deletePipelinerunsPelector

@@ -1,0 +1,19 @@
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerBinding
+metadata:
+  name: env-job-pipeline-binding
+spec:
+  params:
+  - name: appname
+    value: $(body.name)
+  - name: project
+    value: $(body.project)
+  - name: imageurl
+    value: $(body.imageurl)
+  - name: imagetag
+    value: $(body.imagetag)
+  - name: command
+    value: $(body.command)
+  - name: envs
+    value: $(body.envs)

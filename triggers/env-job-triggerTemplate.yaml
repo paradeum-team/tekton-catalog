@@ -1,0 +1,44 @@
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: TriggerTemplate
+metadata:
+  name: env-job-pipeline-template
+spec:
+  params:
+  - name: project
+  - name: appname
+  - name: envs
+    description: The envs, Example a=1|b=2
+  - name: imageurl
+  - name: imagetag
+    default: latest
+  - name: command
+  - name: pipelineRef
+    default: "env-job"
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      labels:
+        tekton.dev/pipeline: $(tt.params.pipelineRef)
+        tekton.dev/project: $(tt.params.project)
+        tekton.dev/appname: $(tt.params.appname)
+      generateName: $(tt.params.pipelineRef)-$(tt.params.project)-$(tt.params.appname)- # 前缀名称 
+      namespace: tekton-pipelines
+    spec:
+      params:
+      - name: ENVS
+        value: $(tt.params.envs)
+      - name: IMAGE_URL
+        value: $(tt.params.imageurl)
+      - name: IMAGE_TAG
+        value: $(tt.params.imagetag)
+      - name: COMMAND
+        value: $(tt.params.command)
+      pipelineRef:
+        name: $(tt.params.pipelineRef)
+      serviceAccountName: tekton-triggers-sa
+      timeout: 10m0s
+      podTemplate:
+        imagePullSecrets:
+          - name: registry-pld-cicd

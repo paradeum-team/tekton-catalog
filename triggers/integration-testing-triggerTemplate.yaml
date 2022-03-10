@@ -27,7 +27,7 @@ spec:
     kind: PipelineRun
     metadata:
       labels:
-        tekton.dev/pipeline: golang
+        tekton.dev/pipeline: $(tt.params.pipelineRef)
         tekton.dev/project: $(tt.params.project)
         tekton.dev/appname: $(tt.params.appname)
       generateName: $(tt.params.pipelineRef)-$(tt.params.project)-$(tt.params.appname)- # 前缀名称 
