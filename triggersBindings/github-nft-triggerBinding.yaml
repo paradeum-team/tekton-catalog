@@ -20,4 +20,4 @@ spec:
   - name: npmbuildcmd
     value: "npm run build --if-present"
   - name: buildimage
-    value: "node:14"
+    value: "registry.example.com/library/node:14"

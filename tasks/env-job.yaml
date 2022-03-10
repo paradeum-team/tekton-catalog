@@ -1,0 +1,33 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: env-job
+  labels:
+    app.kubernetes.io/version: "0.1"
+    tekton.dev/categories: Kubernetes
+
+spec:
+  params:
+    - name: envs
+      type: string
+      description: The env job envs, Example a=1|b=2
+    - name: image
+      description: The env job image
+    - name: command
+      description: The env job command
+  steps:
+    - name: env-job
+      image: $(params.image)
+      script: |
+        #!/usr/bin/env sh
+        # get env
+        stringEnv="$(params.envs)"
+        echo "envs ===> ${stringEnv}"
+        for var in `echo $stringEnv|tr '|' ' '`
+        do
+          export $var
+          echo $var
+        done
+        $(params.command)
+
