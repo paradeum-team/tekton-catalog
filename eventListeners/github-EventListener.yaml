@@ -30,7 +30,7 @@ spec:
           secretName: env-job-webhook-secret
           secretKey: secretToken
       cel:
-        filter: body.envs != ''
+        filter: body.command != ''
     bindings:
     - ref: env-job-pipeline-binding # TriggerBinding 对象
     template:
