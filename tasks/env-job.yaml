@@ -16,9 +16,13 @@ spec:
       description: The env job image
     - name: command
       description: The env job command
+  workspaces:
+    - name: source
+      optional: true
   steps:
     - name: env-job
       image: $(params.image)
+      workingDir: $(workspaces.source.path)
       script: |
         #!/usr/bin/env sh
         # get env
