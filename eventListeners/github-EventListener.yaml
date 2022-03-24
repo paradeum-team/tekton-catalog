@@ -15,10 +15,10 @@ spec:
         eventTypes:
           - "Tag Push Hook" # 接收 Github Tag 事件
       cel:
-        filter: body.ref.split('/')[1] == 'tags' && body.repository.full_name in ['example-team/ethereum-api','example-team/blockchain-api']
+        filter: body.ref_type == 'tag' && body.repository.full_name in ['paradeum-team/ethereum-api','paradeum-team/blockchain-api']
         overlays:
           - key: tag_name
-            expression: "body.ref.split('/')[2]"
+            expression: "body.ref"
     bindings:
     - ref: github-nft-pipeline-binding # TriggerBinding 对象
     template:
@@ -35,3 +35,20 @@ spec:
     - ref: env-job-pipeline-binding # TriggerBinding 对象
     template:
       ref: env-job-pipeline-template  # TriggerTemplate 对象
+  - name: contracts-test-events-trigger
+    interceptors:
+    - github:
+        secretRef:  # 引用 env-job-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: github-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Github Tag 事件
+      cel:
+        filter: body.ref_type == 'tag' && body.repository.full_name in ['paradeum-team/pld-chain-contracts']
+        overlays:
+          - key: tag_name
+            expression: "body.ref"
+    bindings:
+    - ref: contracts-test-pipeline-binding # TriggerBinding 对象
+    template:
+      ref: unit-testing-pipeline-template  # TriggerTemplate 对象

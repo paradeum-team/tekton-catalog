@@ -1,0 +1,76 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: unit-testing
+spec:
+
+  workspaces:
+    - name: source-ws
+      description: Location where source is stored.
+    - name: basic-auth-ws
+      optional: true
+
+  params:
+    - name: SOURCE_URL
+      description: A git repo url where the source code resides.
+    - name: SOURCE_REFERENCE
+      description: The branch, tag or SHA to checkout.
+    - name: ENVS
+    - name: IMAGE_URL
+    - name: IMAGE_TAG
+      default: "latest"
+    - name: COMMAND
+    - name: PIPELINERUNS_HISTORY_LIMIT
+      default: "10"
+    - name: DELETE_PIPELINERUNS_IMAGE
+      default: "bitnami/kubectl:1.22"
+    - name: DELETE_PIPELINERUNS_SELECTOR
+      default: "tekton.dev/pipeline=unit-testing"
+    - name: DELETE_PIPELINERUNS_NAMESPACE
+      default: "tekton-pipelines"
+
+  tasks:
+    - name: fetch-from-git
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.SOURCE_URL)
+        - name: revision
+          value: $(params.SOURCE_REFERENCE)
+      workspaces:
+        - name: output
+          workspace: source-ws
+        - name: basic-auth
+          workspace: basic-auth-ws
+
+    - name: unit-testing
+      taskRef:
+        name: env-job
+      runAfter:
+        - fetch-from-git
+      workspaces:
+        - name: source
+          workspace: source-ws
+      params:
+        - name: envs
+          value: '$(params.ENVS)'
+        - name: image
+          value: '$(params.IMAGE_URL):$(params.IMAGE_TAG)'
+        - name: command
+          value: '$(params.COMMAND)'
+
+    - name: delete-pr
+      taskRef:
+         name: delete-pipelineruns
+      params:
+        - name: historyLimit
+          value: '$(params.PIPELINERUNS_HISTORY_LIMIT)'
+        - name: selector
+          value: '$(params.DELETE_PIPELINERUNS_SELECTOR)'
+        - name: image
+          value: '$(params.DELETE_PIPELINERUNS_IMAGE)'
+        - name: namespace
+          value: '$(params.DELETE_PIPELINERUNS_NAMESPACE)'
+
