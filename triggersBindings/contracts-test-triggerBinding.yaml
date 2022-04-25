@@ -14,7 +14,7 @@ spec:
   - name: project
     value: nft
   - name: imageurl
-    value: "registry.example.com/trailofbits/eth-security-toolbox"
+    value: "docker.io/trailofbits/eth-security-toolbox"
   - name: imagetag
     value: "latest"
   - name: command

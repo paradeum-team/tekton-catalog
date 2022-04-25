@@ -18,6 +18,8 @@ spec:
     default: registry.example.com/library/node:14
   - name: npmbuildcmd
     default: "npm run build"
+  - name: npmusecache
+    default: "true"
   - name: deletePipelinerunsPelector
     default: "tekton.dev/pipeline=nodejs"
   - name: chartgitrepositoryurl
@@ -73,6 +75,8 @@ spec:
         value: $(tt.params.buildimage)
       - name: NPM_BUILD_CMD
         value: $(tt.params.npmbuildcmd)
+      - name: NPM_USE_CACHE
+        value: $(tt.params.npmusecache)
       - name: SOURCE_URL
         value: $(tt.params.gitrepositoryurl)
       - name: SOURCE_REFERENCE

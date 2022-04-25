@@ -61,6 +61,10 @@ spec:
         cp -Rf $(workspaces.cache.path)/. $cacheDir/
       fi
 
+      VERSION=`cat version`
+      echo ----- VERSION: $VERSION -----
+      echo -n "$VERSION" > VERSION
+
       go mod tidy
       go build $(params.flags)
 
