@@ -43,6 +43,8 @@ spec:
       value: $(extensions.project)
     - name: chartgitrepositoryurl
       value: https://gitlab.example.com/pld/$(extensions.project)-helm-charts.git
+    - name: chartcontext
+      value: charts/$(body.project.name)
     - ref: gitlab-general-pipeline-binding # TriggerBinding 对象
     template:
       ref: nodejs-pipeline-template  # TriggerTemplate 对象
@@ -66,6 +68,8 @@ spec:
       value: $(extensions.project)
     - name: chartgitrepositoryurl
       value: https://gitlab.example.com/pld/$(extensions.project)-helm-charts.git
+    - name: chartcontext
+      value: charts/$(body.project.name)
     - ref: gitlab-general-pipeline-binding # TriggerBinding 对象
     template:
       ref: golang-pipeline-template  # TriggerTemplate 对象
@@ -106,6 +110,8 @@ spec:
       value: nft
     - name: chartgitrepositoryurl
       value: https://gitlab.example.com/pld/nft-helm-charts.git
+    - name: chartcontext
+      value: charts/$(extensions.chartcontext)
     - ref: gitlab-general-pipeline-binding # TriggerBinding 对象
     template:
       ref: integration-testing-pipeline-template # TriggerTemplate 对象
@@ -129,6 +135,8 @@ spec:
       value: foundation
     - name: chartgitrepositoryurl
       value: https://gitlab.example.com/pld/foundation-helm-charts.git
+    - name: chartcontext
+      value: charts/$(extensions.chartcontext)
     - ref: gitlab-general-pipeline-binding # TriggerBinding 对象
     template:
       ref: integration-testing-pipeline-template # TriggerTemplate 对象
