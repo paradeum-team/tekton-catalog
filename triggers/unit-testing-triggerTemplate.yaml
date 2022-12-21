@@ -66,6 +66,3 @@ spec:
         name: $(tt.params.pipelineRef)
       serviceAccountName: tekton-triggers-sa
       timeout: 10m0s
-      podTemplate:
-        imagePullSecrets:
-          - name: registry-pld-cicd

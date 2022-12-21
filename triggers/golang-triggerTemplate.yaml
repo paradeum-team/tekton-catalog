@@ -21,6 +21,8 @@ spec:
   - name: chartgitrepositoryurl
   - name: chartgitbranch
     default: dev
+  - name: chartcontext
+    default: "."
   resourcetemplates:
   - apiVersion: tekton.dev/v1beta1
     kind: PipelineRun
@@ -29,7 +31,7 @@ spec:
         tekton.dev/pipeline: golang
         tekton.dev/project: $(tt.params.project)
         tekton.dev/appname: $(tt.params.appname)
-      generateName: $(tt.params.pipelineRef)-$(tt.params.project)-$(tt.params.appname)- # 前缀名称 
+      generateName: $(tt.params.project)-$(tt.params.appname)-$(tt.params.pipelineRef)- # 前缀名称 
       namespace: tekton-pipelines
     spec:
       workspaces:
@@ -89,6 +91,8 @@ spec:
         value: $(tt.params.chartgitrepositoryurl)
       - name: CHART_SOURCE_BRANCH
         value: $(tt.params.chartgitbranch)
+      - name: CHART_CONTEXT
+        value: "$(tt.params.chartcontext)"
       pipelineRef:
         name: $(tt.params.pipelineRef)
       serviceAccountName: tekton-triggers-sa

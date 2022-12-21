@@ -1,0 +1,162 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: general-kaniko-2
+spec:
+
+  workspaces:
+    - name: source-ws
+      description: Location where source is stored.
+    - name: cache-ws
+      optional: true
+    - name: basic-auth-ws
+      optional: true
+    - name: chart-source-ws
+    - name: chart-basic-auth-ws
+    - name: dockerconfig-ws
+      optional: true
+
+  params:
+    - name: APP_NAME
+    - name: SOURCE_URL
+      description: A git repo url where the source code resides.
+    - name: SOURCE_REFERENCE
+      description: The branch, tag or SHA to checkout.
+      default: ""
+    - name: SOURCE_SUBMODULES
+      default: "false"
+    - name: CHART_SOURCE_URL
+      description: A git repo url where the helm chart source code resides.
+    - name: CHART_SOURCE_BRANCH
+      description: The helm chart branch.
+      default: "dev"
+    - name: CHART_CONTEXT
+      default: "."
+
+    - name: DOCKERFILE_CONTEXT
+      default: "."
+    - name: BUILDER_IMAGE
+    - name: IMAGE_URL
+      default: ""
+    - name: IMAGE_TAG
+      default: "latest"
+
+    - name: PIPELINERUNS_HISTORY_LIMIT
+      default: "5"
+    - name: DELETE_PIPELINERUNS_IMAGE
+      default: "bitnami/kubectl:1.22"
+    #- name: DELETE_PIPELINERUNS_SELECTOR
+    #  default: "tekton.dev/pipeline=general-kaniko-2"
+    - name: DELETE_PIPELINERUNS_NAMESPACE
+      default: "tekton-pipelines"
+
+  tasks:
+    - name: fetch-from-git
+      taskRef:
+        name: git-clone-2
+      params:
+        - name: url
+          value: $(params.SOURCE_URL)
+        - name: revision
+          value: $(params.SOURCE_REFERENCE)
+        - name: submodules
+          value: $(params.SOURCE_SUBMODULES)
+      workspaces:
+        - name: output
+          workspace: source-ws
+        - name: basic-auth
+          workspace: basic-auth-ws
+
+    - name: kaniko
+      taskRef:
+        name: kaniko
+      runAfter: 
+        - fetch-from-git
+      params:
+        - name: CONTEXT
+          value: '$(params.DOCKERFILE_CONTEXT)'
+        - name: IMAGE
+          value: '$(params.IMAGE_URL):$(params.IMAGE_TAG)'
+        - name: BUILDER_IMAGE
+          value: '$(params.BUILDER_IMAGE)'
+        - name: EXTRA_ARGS
+          value:
+            - --build-arg=VERSION=$(tasks.fetch-from-git.results.version)
+      workspaces:
+        - name: source
+          workspace: source-ws
+        - name: dockerconfig
+          workspace: dockerconfig-ws
+      
+    - name: fetch-helm-chart
+      taskRef:
+        name: git-clone
+      runAfter:
+        - kaniko
+      params:
+        - name: url
+          value: $(params.CHART_SOURCE_URL)
+        - name: revision
+          value: $(params.CHART_SOURCE_BRANCH)
+      workspaces:
+        - name: output
+          workspace: chart-source-ws
+        - name: basic-auth
+          workspace: chart-basic-auth-ws
+    - name: update-chart-version
+      taskRef:
+        name: yq-helm-chart-version
+      runAfter: 
+        - fetch-helm-chart
+      params:
+        - name: appVersion
+          value: $(params.IMAGE_TAG)
+        - name: imageTag
+          value: $(params.IMAGE_TAG)
+        - name: chartDir
+          value: "$(params.CHART_CONTEXT)"
+      workspaces:
+        - name: source
+          workspace: chart-source-ws
+    - name: helm-docs
+      taskRef:
+        name: helm-docs
+      runAfter:
+        - update-chart-version
+      workspaces:
+        - name: source
+          workspace: chart-source-ws
+    - name: push-chart
+      taskRef:
+        name: git-cli
+      runAfter: 
+        - helm-docs
+      params:
+        - name: GIT_SCRIPT
+          value: |
+            git config --global user.email "cicd@example.com"
+            git config --global user.name "cicd"
+            git add .
+            git commit -m "sync: update $(params.APP_NAME) image tag to $(params.IMAGE_TAG)"
+            git checkout -b $(params.CHART_SOURCE_BRANCH)
+            git pull origin $(params.CHART_SOURCE_BRANCH)
+            git push origin $(params.CHART_SOURCE_BRANCH)
+      workspaces:
+        - name: source
+          workspace: chart-source-ws
+        - name: basic-auth
+          workspace: chart-basic-auth-ws
+
+    - name: delete-pr
+      taskRef:
+         name: delete-pipelineruns
+      params:
+        - name: historyLimit
+          value: '$(params.PIPELINERUNS_HISTORY_LIMIT)'
+        - name: selector
+          value: 'tekton.dev/appname=$(params.APP_NAME)'
+        - name: image
+          value: '$(params.DELETE_PIPELINERUNS_IMAGE)'
+        - name: namespace
+          value: '$(params.DELETE_PIPELINERUNS_NAMESPACE)'

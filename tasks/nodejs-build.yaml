@@ -26,9 +26,9 @@ spec:
       workingDir: $(workspaces.source.path)
       resources:
         requests:
-          memory: "1024Mi"
+          memory: "4096Mi"
         limits:
-          memory: "2048Mi"
+          memory: "4608Mi"
       env:
       - name: npm_config_registry
         valueFrom:
@@ -36,6 +36,8 @@ spec:
             name: npm-config
             key: npm_config_registry
             optional: true
+      - name: NODE_OPTIONS
+        value: "--max-old-space-size=4096"
       script: |
         #!/bin/bash
         set -e
@@ -48,9 +50,11 @@ spec:
         VERSION=`cat version`
         echo ----- VERSION: $VERSION -----
         if [ -f "public/conf.js" ];then
+          echo "" >> public/conf.js
           echo "VERSION='$VERSION'" >> public/conf.js
         fi
 
+        rm -rf dist
         npm install
         $(params.npm-build-cmd)
 

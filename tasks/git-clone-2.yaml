@@ -2,9 +2,9 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: git-clone
+  name: git-clone-2
   labels:
-    app.kubernetes.io/version: "0.5"
+    app.kubernetes.io/version: "0.6"
   annotations:
     tekton.dev/pipelines.minVersion: "0.21.0"
     tekton.dev/categories: Git
@@ -114,6 +114,10 @@ spec:
     - name: url
       description: The precise URL that was fetched by this Task.
     - name: version
+    - name: chartUrl
+    - name: chartContext
+    - name: project
+    - name: appname
   steps:
     - name: clone
       image: "$(params.gitInitImage)"
@@ -227,8 +231,14 @@ spec:
         if [ "${EXIT_CODE}" != 0 ] ; then
           exit "${EXIT_CODE}"
         fi
-        printf "%s" "${PARAM_REVISION}" > version
         printf "%s" "${PARAM_REVISION}" > "$(results.version.path)"
         printf "%s" "${RESULT_SHA}" > "$(results.commit.path)"
         printf "%s" "${PARAM_URL}" > "$(results.url.path)"
-       
+
+        if [ -f "tekton.env" ] ; then
+          . tekton.env
+          printf "%s" "${CHART_URL}" > "$(results.chartUrl.path)"
+          printf "%s" "${CHART_CONTEXT}" > "$(results.chartContext.path)"
+          printf "%s" "${PROJECT}" > "$(results.project.path)"
+          printf "%s" "${APPNAME}" > "$(results.appname.path)"
+        fi

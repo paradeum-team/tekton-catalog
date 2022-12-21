@@ -23,10 +23,12 @@ spec:
         tekton.dev/pipeline: $(tt.params.pipelineRef)
         tekton.dev/project: $(tt.params.project)
         tekton.dev/appname: $(tt.params.appname)
-      generateName: $(tt.params.pipelineRef)-$(tt.params.project)-$(tt.params.appname)- # 前缀名称 
+      generateName: $(tt.params.appname)-$(tt.params.pipelineRef)- # 前缀名称 
       namespace: tekton-pipelines
     spec:
       params:
+      - name: APP_NAME
+        value: $(tt.params.appname)
       - name: ENVS
         value: $(tt.params.envs)
       - name: IMAGE_URL
@@ -38,7 +40,4 @@ spec:
       pipelineRef:
         name: $(tt.params.pipelineRef)
       serviceAccountName: tekton-triggers-sa
-      timeout: 10m0s
-      podTemplate:
-        imagePullSecrets:
-          - name: registry-pld-cicd
+      timeout: 30m0s

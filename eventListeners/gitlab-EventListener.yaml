@@ -6,6 +6,7 @@ metadata:
 spec:
   serviceAccountName: tekton-triggers-sa
   triggers:
+  # 只参考，已弃用
   - name: gitlab-nodejs-tag-events-trigger
     interceptors:
     - gitlab:
@@ -15,7 +16,7 @@ spec:
         eventTypes:
           - "Tag Push Hook" # 接收 Gitlab Tag 事件
       cel:
-        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/nft-ui']
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in []
         overlays:
           - key: tag_name
             expression: "body.ref.split('/')[2]"
@@ -23,6 +24,33 @@ spec:
     - ref: gitlab-nft-pipeline-binding # TriggerBinding 对象
     template:
       ref: nodejs-pipeline-template  # TriggerTemplate 对象
+  # 只参考，已弃用
+  - name: gitlab-nft-vue-nodejs-tag-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 gitlab-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in []
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+    bindings:
+    - name: project
+      value: nft
+    - name: chartgitrepositoryurl
+      value: https://gitlab.example.com/pld/nft-helm-charts.git
+    - name: chartcontext
+      value: charts/$(body.project.name)
+    - name: buildimage
+      value: "registry.example.com/library/node:14"
+    - ref: gitlab-general-pipeline-binding # TriggerBinding 对象
+    template:
+      ref: nodejs-pipeline-template  # TriggerTemplate 对象
+  # 只参考，已弃用
   - name: gitlab-general-nodejs-tag-events-trigger
     interceptors:
     - gitlab:
@@ -32,7 +60,7 @@ spec:
         eventTypes:
           - "Tag Push Hook" # 接收 Gitlab Tag 事件
       cel:
-        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/foundation-ui']
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in []
         overlays:
           - key: tag_name
             expression: "body.ref.split('/')[2]"
@@ -48,6 +76,7 @@ spec:
     - ref: gitlab-general-pipeline-binding # TriggerBinding 对象
     template:
       ref: nodejs-pipeline-template  # TriggerTemplate 对象
+  # 只参考，已弃用
   - name: gitlab-general-golang-tag-events-trigger
     interceptors:
     - gitlab:
@@ -57,7 +86,7 @@ spec:
         eventTypes:
           - "Tag Push Hook" # 接收 Gitlab Tag 事件
       cel:
-        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/foundation-api', 'pld/foundation-sync-index']
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in []
         overlays:
           - key: tag_name
             expression: "body.ref.split('/')[2]"
@@ -73,6 +102,7 @@ spec:
     - ref: gitlab-general-pipeline-binding # TriggerBinding 对象
     template:
       ref: golang-pipeline-template  # TriggerTemplate 对象
+  # 只参考，已弃用
   - name: gitlab-golang-tag-events-trigger
     interceptors:
     - gitlab:
@@ -82,7 +112,7 @@ spec:
         eventTypes:
           - "Tag Push Hook" # 接收 Gitlab Tag 事件
       cel:
-        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/nft-api']
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['xxx/xxxxxx']
         overlays:
           - key: tag_name
             expression: "body.ref.split('/')[2]"
@@ -90,6 +120,25 @@ spec:
     - ref: gitlab-nft-pipeline-binding # TriggerBinding 对象
     template:
       ref: golang-pipeline-template  # TriggerTemplate 对象
+  # 只参考，已弃用
+  - name: gitlab-golang-cellar-tag-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 gitlab-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['xxx/xxxxxx']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+    bindings:
+    - ref: gitlab-cellar-pipeline-binding # TriggerBinding 对象
+    template:
+      ref: golang-pipeline-template  # TriggerTemplate 对象
+  # 只参考，已弃用
   - name: gitlab-nft-integration-testing-tag-events-trigger
     interceptors:
     - gitlab:
@@ -99,7 +148,7 @@ spec:
         eventTypes:
           - "Tag Push Hook" # 接收 Gitlab Tag 事件
       cel:
-        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/great-wall-wine-cellar-api-test']
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['xxx/xxxxxx']
         overlays:
           - key: tag_name
             expression: "body.ref.split('/')[2]"
@@ -115,6 +164,7 @@ spec:
     - ref: gitlab-general-pipeline-binding # TriggerBinding 对象
     template:
       ref: integration-testing-pipeline-template # TriggerTemplate 对象
+  # 只参考，已弃用
   - name: gitlab-foundation-integration-testing-tag-events-trigger
     interceptors:
     - gitlab:
@@ -124,7 +174,7 @@ spec:
         eventTypes:
           - "Tag Push Hook" # 接收 Gitlab Tag 事件
       cel:
-        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/foundation-api-test']
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in []
         overlays:
           - key: tag_name
             expression: "body.ref.split('/')[2]"
@@ -140,6 +190,7 @@ spec:
     - ref: gitlab-general-pipeline-binding # TriggerBinding 对象
     template:
       ref: integration-testing-pipeline-template # TriggerTemplate 对象
+  # 只参考，已弃用
   - name: gitlab-bfs-wallet-api-test-tag-events-trigger
     interceptors:
     - gitlab:
@@ -149,7 +200,7 @@ spec:
         eventTypes:
           - "Tag Push Hook" # 接收 Gitlab Tag 事件
       cel:
-        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/bfs-wallet-api-test']
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in []
         overlays:
           - key: tag_name
             expression: "body.ref.split('/')[2]"
@@ -157,6 +208,7 @@ spec:
     - ref: gitlab-bfs-wallet-api-test-binding # TriggerBinding 对象
     template:
       ref: integration-testing-pipeline-template # TriggerTemplate 对象
+  # 只参考，已弃用
   - name: gitlab-bfs-wallet-api-test-tag-events-trigger
     interceptors:
     - gitlab:
@@ -166,7 +218,7 @@ spec:
         eventTypes:
           - "Tag Push Hook" # 接收 Gitlab Tag 事件
       cel:
-        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/bfs-wallet-api-test']
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in []
         overlays:
           - key: tag_name
             expression: "body.ref.split('/')[2]"
@@ -174,3 +226,177 @@ spec:
     - ref: gitlab-bfs-wallet-api-test-binding # TriggerBinding 对象
     template:
       ref: integration-testing-pipeline-template # TriggerTemplate 对象
+  # docker buildx 多 cpu 架构构建使用
+  - name: gitlab-general-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 gitlab-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/project1','pld/project2']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+          - key: project
+            expression: "body.project.name.split('-')[0]"
+    bindings:
+    - ref: gitlab-general-docker-buildx-binding
+    - name: apptype
+      value: server
+    - name: chartgitrepositoryurl
+      value: https://gitlab.example.com/pld/$(body.repository.name)-helm-chart.git
+    template:
+      ref: docker-buildx-pipeline-template # TriggerTemplate 对象
+  # docker buildx 事件任务
+  - name: gitlab-general-test-tag-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 gitlab-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/project1']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+          - key: project
+            expression: "body.project.name.split('-')[0]"
+          - key: server_name
+            expression: "body.project.name.split('-test')[0]"
+    bindings:
+    - ref: gitlab-general-docker-buildx-binding
+    - name: apptype
+      value: test
+    - name: chartgitrepositoryurl
+      value: https://gitlab.example.com/pld/$(extensions.server_name)-helm-chart.git
+    template:
+      ref: docker-buildx-pipeline-template # TriggerTemplate 对象
+  # kaniko 事件任务, 目前用于触发集成测试，没有多cpu 架构需求的使用此trigger
+  - name: gitlab-general-kaniko-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 gitlab-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/project1']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+          - key: project
+            expression: "body.project.name.split('-')[0]"
+    bindings:
+    - ref: gitlab-general-kaniko-binding
+    - name: apptype
+      value: server
+    - name: chartgitrepositoryurl
+      value: https://gitlab.example.com/pld/$(body.repository.name)-helm-chart.git
+    template:
+      ref: general-kaniko-pipeline-template # TriggerTemplate 对象
+  # kaniko pipline 2 trigger
+  - name: gitlab-general-kaniko-2-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 github-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/project1']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+          - key: project
+            expression: "body.project.name.split('-')[0]"
+    bindings:
+    - ref: gitlab-general-kaniko-binding
+    - name: apptype
+      value: server
+    - name: chartgitrepositoryurl
+      value: https://gitlab.example.com/pld/$(body.repository.name)-helm-chart.git
+    - name: pipelineRef
+      value: general-kaniko-2
+    template:
+      ref: general-kaniko-pipeline-template # TriggerTemplate 对象
+  # 需要clone submodules 的项目使用
+  - name: gitlab-general-kaniko-submodules-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 gitlab-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/manual']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+          - key: project
+            expression: "body.project.name.split('-')[0]"
+    bindings:
+    - ref: gitlab-general-kaniko-binding
+    - name: apptype
+      value: server
+    - name: chartgitrepositoryurl
+      value: https://gitlab.example.com/pld/$(body.repository.name)-helm-chart.git
+    - name: gitsubmodules
+      value: "true"
+    template:
+      ref: general-kaniko-pipeline-template # TriggerTemplate 对象
+  # kaniko pipeline 第3版, 没有多cpu 架构构建任务使用, 需要项目中配置tekton.env 获取部分配置项，目前最新
+  - name: gitlab-general-kaniko-3-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 github-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/project1']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+          - key: project
+            expression: "body.project.name.split('-')[0]"
+    bindings:
+    - ref: gitlab-general-kaniko-binding
+    - name: apptype
+      value: server
+    - name: pipelineRef
+      value: general-kaniko-3
+    template:
+      ref: general-kaniko-pipeline-template # TriggerTemplate 对象
+  # kaniko pipeline 第3版 集成测试任务, 需要项目中配置tekton.env 获取部分配置项
+  - name: gitlab-general-kaniko-test-tag-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 gitlab-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: gitlab-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: int(body.total_commits_count) > 0 && body.ref.split('/')[1] == 'tags' && body.project.path_with_namespace in ['pld/project1']
+        overlays:
+          - key: tag_name
+            expression: "body.ref.split('/')[2]"
+          - key: project
+            expression: "body.project.name.split('-')[0]"
+    bindings:
+    - ref: gitlab-general-kaniko-binding
+    - name: apptype
+      value: test
+    - name: pipelineRef
+      value: general-kaniko-3
+    template:
+      ref: general-kaniko-pipeline-template # TriggerTemplate 对象
