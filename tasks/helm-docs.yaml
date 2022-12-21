@@ -1,0 +1,27 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: helm-docs
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.31.1"
+    tekton.dev/tags: helm-docs
+    tekton.dev/displayName: "helm docs"
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  workspaces:
+    - name: source
+      description: A workspace that contains the file which needs to be altered.
+  params:
+    - name: context
+      type: string
+      default: .
+    - name: image
+      type: string
+      description: The helm-docs image to use.
+      default: jnorwood/helm-docs:v1.11.0
+  steps:
+    - name: helm-docs
+      image: $(params.image)
+      workingDir: $(workspaces.source.path)/$(params.context)

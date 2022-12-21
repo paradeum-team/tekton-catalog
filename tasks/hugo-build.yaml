@@ -1,0 +1,23 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: hugo-build
+  labels:
+    version: 0.1.0
+spec:
+  workspaces:
+    - name: source
+      description: Directory where application source is located.
+
+  params:
+    - name: build-image
+      default: klakegg/hugo:0.101.0-alpine
+    - name: flags
+      default: ""
+
+  steps:
+    - name: build
+      image: $(params.build-image)
+      workingDir: $(workspaces.source.path)
+      args: $(params.flags)

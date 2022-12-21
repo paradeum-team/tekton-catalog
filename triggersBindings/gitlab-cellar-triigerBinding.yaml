@@ -2,7 +2,7 @@
 apiVersion: triggers.tekton.dev/v1beta1
 kind: TriggerBinding
 metadata:
-  name: gitlab-nft-pipeline-binding
+  name: gitlab-cellar-pipeline-binding
 spec:
   params:
   - name: gitrevision
@@ -12,9 +12,9 @@ spec:
   - name: appname
     value: $(body.repository.name)
   - name: project
-    value: nft
+    value: cellar
   - name: chartgitrepositoryurl 
-    value: https://gitlab.example.com/pld/nft-helm-charts.git
+    value: https://gitlab.example.com/pld/cellar-helm-charts.git
   - name: chartgitbranch
     value: dev
   - name: chartcontext

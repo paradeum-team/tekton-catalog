@@ -6,6 +6,7 @@ metadata:
 spec:
   serviceAccountName: tekton-triggers-sa
   triggers:
+  # 只参考，已弃用
   - name: github-nodejs-tag-events-trigger
     interceptors:
     - github:
@@ -15,7 +16,7 @@ spec:
         eventTypes:
           - "Tag Push Hook" # 接收 Github Tag 事件
       cel:
-        filter: body.ref_type == 'tag' && body.repository.full_name in ['paradeum-team/ethereum-api','paradeum-team/blockchain-api']
+        filter: body.ref_type == 'tag' && body.repository.full_name in ['paradeum-team/project1']
         overlays:
           - key: tag_name
             expression: "body.ref"
@@ -23,6 +24,7 @@ spec:
     - ref: github-nft-pipeline-binding # TriggerBinding 对象
     template:
       ref: nodejs-pipeline-template  # TriggerTemplate 对象
+  # 只参考，已弃用
   - name: env-job-events-trigger
     interceptors:
     - github:
@@ -52,3 +54,51 @@ spec:
     - ref: contracts-test-pipeline-binding # TriggerBinding 对象
     template:
       ref: unit-testing-pipeline-template  # TriggerTemplate 对象
+  # 通用 kaniko pipeline 第2版
+  - name: gitlab-general-kaniko-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 github-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: github-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: body.ref_type == 'tag' && body.repository.full_name in ['paradeum-team/ipfs-cluster-extend']
+        overlays:
+          - key: tag_name
+            expression: "body.ref"
+    bindings:
+    - ref: github-general-kaniko-binding
+    - name: apptype
+      value: server
+    - name: chartgitrepositoryurl
+      value: https://github.com/paradeum-team/$(body.repository.name)-chart.git
+    - name: chartcontext
+      value: "charts/ipfs-cluster-extend"
+    - name: pipelineRef
+      value: general-kaniko-2
+    template:
+      ref: general-kaniko-pipeline-template # TriggerTemplate 对象
+  # 通用 kaniko pipeline 第3版, 需要项目中配置tekton.env 获取部分配置项
+  - name: gitlab-general-kaniko-3-events-trigger
+    interceptors:
+    - gitlab:
+        secretRef:  # 引用 github-webhook-secret 的 Secret 对象中的 secretToken 的值
+          secretName: github-webhook-secret
+          secretKey: secretToken
+        eventTypes:
+          - "Tag Push Hook" # 接收 Gitlab Tag 事件
+      cel:
+        filter: body.ref_type == 'tag' && body.repository.full_name in []
+        overlays:
+          - key: tag_name
+            expression: "body.ref"
+    bindings:
+    - ref: github-general-kaniko-binding
+    - name: apptype
+      value: server
+    - name: pipelineRef
+      value: general-kaniko-3
+    template:
+      ref: general-kaniko-pipeline-template # TriggerTemplate 对象

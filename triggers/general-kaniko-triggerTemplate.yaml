@@ -2,7 +2,7 @@
 apiVersion: triggers.tekton.dev/v1beta1
 kind: TriggerTemplate
 metadata:
-  name: nodejs-pipeline-template
+  name: general-kaniko-pipeline-template
 spec:
   params:
   - name: gitrevision
@@ -10,30 +10,36 @@ spec:
     default: master
   - name: gitrepositoryurl
     description: The git repository url
+  - name: gitsubmodules
+    default: "false"
   - name: registryrepo
-    default: registry.example.com
+    default: registry.solarfs.io
   - name: project
   - name: appname
-  - name: buildimage
-    default: registry.example.com/library/node:14
-  - name: npmbuildcmd
-    default: "npm run build"
-  - name: npmusecache
-    default: "false"
-  - name: deletePipelinerunsPelector
-    default: "tekton.dev/pipeline=nodejs"
+  - name: apptype
+    default: "server"
+  - name: pipelineRef
+    default: "general-kaniko"
   - name: chartgitrepositoryurl
   - name: chartgitbranch
     default: dev
+  - name: chartcontext
+    default: "."
+  - name: dockerfile
+    default: "./Dockerfile"
+  - name: context
+    default: "."
+  - name: buildimage
+    default: "gcr.io/kaniko-project/executor:v1.9.1-debug"
   resourcetemplates:
   - apiVersion: tekton.dev/v1beta1
     kind: PipelineRun
     metadata:
       labels:
-        tekton.dev/pipeline: nodejs
+        tekton.dev/pipeline: general-kaniko
         tekton.dev/project: $(tt.params.project)
         tekton.dev/appname: $(tt.params.appname)
-      generateName: $(tt.params.project)-$(tt.params.appname)-nodejs # 前缀名称 
+      generateName: $(tt.params.appname)-$(tt.params.pipelineRef)- # 前缀名称 
       namespace: tekton-pipelines
     spec:
       workspaces:
@@ -46,10 +52,6 @@ spec:
               resources:
                 requests:
                   storage: 1Gi
-        - name: cache-ws
-          persistentVolumeClaim:
-            claimName: tekton-cache-claim
-          subPath: cache-$(tt.params.project)-$(tt.params.appname)
         - name: chart-source-ws
           volumeClaimTemplate:
             spec:
@@ -59,6 +61,10 @@ spec:
               resources:
                 requests:
                   storage: 1Gi
+        - name: cache-ws
+          persistentVolumeClaim:
+            claimName: tekton-cache-claim
+          subPath: cache-tekton-$(tt.params.project)-$(tt.params.appname)
         - name: dockerconfig-ws
           secret:
             secretName: pld-cicd-secret
@@ -69,35 +75,42 @@ spec:
           secret:
             secretName: gitlab-basic-auth-secret
       params:
-      - name: APP_NAME
-        value: $(tt.params.appname)
-      - name: BUILD_IMAGE
-        value: $(tt.params.buildimage)
-      - name: NPM_BUILD_CMD
-        value: $(tt.params.npmbuildcmd)
-      - name: NPM_USE_CACHE
-        value: $(tt.params.npmusecache)
       - name: SOURCE_URL
         value: $(tt.params.gitrepositoryurl)
       - name: SOURCE_REFERENCE
         value: $(tt.params.gitrevision)
-      - name: DOCKERFILE_CONTEXT
-        value: .
-      - name: RUN_IMAGE
-        value: nginx
-      - name: BUILDER_IMAGE
-        value: gcr.io/kaniko-project/executor:v1.7.0
+      - name: SOURCE_SUBMODULES
+        value: $(tt.params.gitsubmodules)
+      - name: CHART_SOURCE_URL
+        value: $(tt.params.chartgitrepositoryurl)
+      - name: CHART_SOURCE_BRANCH
+        value: $(tt.params.chartgitbranch)
+      - name: CHART_CONTEXT
+        value: $(tt.params.chartcontext)
+
+      - name: APP_NAME
+        value: $(tt.params.appname)
+      - name: APP_TYPE
+        value: $(tt.params.apptype)
       - name: IMAGE_URL
         value: $(tt.params.registryrepo)/$(tt.params.project)/$(tt.params.appname)
       - name: IMAGE_TAG
         value: $(tt.params.gitrevision)
+
+      - name: BUILDER_IMAGE
+        value: "$(tt.params.buildimage)"
+      - name: DOCKERFILE
+        value: "$(tt.params.dockerfile)"
+      - name: CONTEXT
+        value: "$(tt.params.context)"
+
       - name: DELETE_PIPELINERUNS_SELECTOR
-        value: 'tekton.dev/pipeline=nodejs,tekton.dev/project=$(tt.params.project),tekton.dev/appname=$(tt.params.appname)' 
+        value: 'tekton.dev/project=$(tt.params.project),tekton.dev/appname=$(tt.params.appname)'
       - name: CHART_SOURCE_URL
         value: $(tt.params.chartgitrepositoryurl)
       - name: CHART_SOURCE_BRANCH
         value: $(tt.params.chartgitbranch)
       pipelineRef:
-        name: nodejs
+        name: $(tt.params.pipelineRef)
       serviceAccountName: tekton-triggers-sa
       timeout: 15m0s

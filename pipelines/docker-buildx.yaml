@@ -1,0 +1,169 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: docker-buildx
+spec:
+
+  workspaces:
+    - name: source-ws
+      description: Location where source is stored.
+    - name: cache-ws
+      optional: true
+    - name: basic-auth-ws
+      optional: true
+    - name: chart-source-ws
+    - name: chart-basic-auth-ws
+    - name: dockerconfig-ws
+      optional: true
+
+  params:
+    - name: SOURCE_URL
+      description: A git repo url where the source code resides.
+    - name: SOURCE_REFERENCE
+      description: The branch, tag or SHA to checkout.
+      default: ""
+    - name: CHART_SOURCE_URL
+      description: A git repo url where the helm chart source code resides.
+    - name: CHART_SOURCE_BRANCH
+      description: The helm chart branch.
+      default: "dev"
+
+    - name: APP_NAME
+    - name: APP_TYPE
+    - name: IMAGE_URL
+    - name: IMAGE_TAG
+      default: "latest"
+
+    - name: DOCKERFILE
+      default: "./Dockerfile"
+    - name: CONTEXT
+      default: "."
+    - name: BUILD_EXTRA_ARGS
+      default: "--platform linux/amd64,linux/arm64"
+    - name: PUSH_EXTRA_ARGS
+      default: "--push"
+
+    - name: PIPELINERUNS_HISTORY_LIMIT
+      default: "10"
+    - name: DELETE_PIPELINERUNS_IMAGE
+      default: "bitnami/kubectl:1.22"
+    - name: DELETE_PIPELINERUNS_NAMESPACE
+      default: "tekton-pipelines"
+
+  tasks:
+    - name: fetch-from-git
+      taskRef:
+        name: git-clone
+      params:
+        - name: url
+          value: $(params.SOURCE_URL)
+        - name: revision
+          value: $(params.SOURCE_REFERENCE)
+      workspaces:
+        - name: output
+          workspace: source-ws
+        - name: basic-auth
+          workspace: basic-auth-ws
+
+    - name: docker-buildx
+      taskRef:
+        name: docker-buildx
+      runAfter: 
+        - fetch-from-git
+      params:
+        - name: image_repository
+          value: '$(params.IMAGE_URL)'
+        - name: image_tag
+          value: '$(params.IMAGE_TAG)'
+        - name: dockerfile
+          value: '$(params.DOCKERFILE)'
+        - name: context
+          value: '$(params.CONTEXT)'
+        - name: build_extra_args
+          value: '$(params.BUILD_EXTRA_ARGS)'
+        - name: push_extra_args
+          value: '$(params.PUSH_EXTRA_ARGS)'
+      workspaces:
+        - name: source
+          workspace: source-ws
+        - name: cache
+          workspace: cache-ws
+        - name: dockerconfig
+          workspace: dockerconfig-ws
+
+    - name: fetch-helm-chart
+      taskRef:
+        name: git-clone
+      runAfter:
+        - docker-buildx
+      params:
+        - name: url
+          value: $(params.CHART_SOURCE_URL)
+        - name: revision
+          value: $(params.CHART_SOURCE_BRANCH)
+      workspaces:
+        - name: output
+          workspace: chart-source-ws
+        - name: basic-auth
+          workspace: chart-basic-auth-ws
+    - name: update-chart-version
+      taskRef:
+        name: yq-helm-chart-version
+      runAfter:
+        - fetch-helm-chart
+      params:
+        - name: appType
+          value: $(params.APP_TYPE)
+        - name: appVersion
+          value: $(params.IMAGE_TAG)
+        - name: imageTag
+          value: $(params.IMAGE_TAG)
+        - name: chartDir
+          value: "."
+      workspaces:
+        - name: source
+          workspace: chart-source-ws
+    - name: helm-docs
+      taskRef:
+        name: helm-docs
+      runAfter:
+        - update-chart-version
+      workspaces:
+        - name: source
+          workspace: chart-source-ws
+    - name: push-chart
+      taskRef:
+        name: git-cli
+      runAfter:
+        - helm-docs
+      params:
+        - name: GIT_SCRIPT
+          value: |
+            git config --global user.email "cicd@example.com"
+            git config --global user.name "cicd"
+            rm -f version VERSION
+            git add .
+            git commit -m "sync: update $(params.APP_NAME) image tag to $(params.IMAGE_TAG)"
+            git checkout -b $(params.CHART_SOURCE_BRANCH)
+            git pull origin $(params.CHART_SOURCE_BRANCH)
+            git push origin $(params.CHART_SOURCE_BRANCH)
+      workspaces:
+        - name: source
+          workspace: chart-source-ws
+        - name: basic-auth
+          workspace: chart-basic-auth-ws
+
+    - name: delete-pr
+      taskRef:
+         name: delete-pipelineruns
+      params:
+        - name: historyLimit
+          value: '$(params.PIPELINERUNS_HISTORY_LIMIT)'
+        - name: selector
+          value: 'tekton.dev/appname=$(params.APP_NAME)'
+        - name: image
+          value: '$(params.DELETE_PIPELINERUNS_IMAGE)'
+        - name: namespace
+          value: '$(params.DELETE_PIPELINERUNS_NAMESPACE)'
+

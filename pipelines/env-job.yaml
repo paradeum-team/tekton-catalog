@@ -6,6 +6,7 @@ metadata:
 spec:
 
   params:
+    - name: APP_NAME
     - name: ENVS
     - name: IMAGE_URL
     - name: IMAGE_TAG
@@ -15,8 +16,6 @@ spec:
       default: "10"
     - name: DELETE_PIPELINERUNS_IMAGE
       default: "bitnami/kubectl:1.22"
-    - name: DELETE_PIPELINERUNS_SELECTOR
-      default: "tekton.dev/pipeline=env-job"
     - name: DELETE_PIPELINERUNS_NAMESPACE
       default: "tekton-pipelines"
 
@@ -39,7 +38,7 @@ spec:
         - name: historyLimit
           value: '$(params.PIPELINERUNS_HISTORY_LIMIT)'
         - name: selector
-          value: '$(params.DELETE_PIPELINERUNS_SELECTOR)'
+          value: 'tekton.dev/appname=$(params.APP_NAME)'
         - name: image
           value: '$(params.DELETE_PIPELINERUNS_IMAGE)'
         - name: namespace
